@@ -4,6 +4,7 @@ import numpy as np
 import time
 from PIL import Image
 from config import config
+
 # import imagehash
 # import math
 # import matplotlib.pyplot as plt
@@ -29,32 +30,34 @@ def binary_Search(lst, find_number):
 
 
 def get_DHash_Value(hash_list):
+    # 반복횟수 22734 * 8 * 8 + 22734 * 64
     for filename in os.listdir(config.DIRECTORY):
-        img = Image.open(os.path.join(config.DIRECTORY, filename))
-        img = img.resize((config.resize_width, config.resize_height))  # 9 * 8로 이미지 리사이징
-        img = img.convert("L")  # gray scale로 차원 축소
+        if filename.endswith(".jpg"):
+            img = Image.open(os.path.join(config.DIRECTORY, filename))
+            img = img.resize((config.resize_width, config.resize_height))  # 9 * 8로 이미지 리사이징
+            img = img.convert("L")  # gray scale로 차원 축소
 
-        pixels = list(img.getdata())
-        difference = []
-        # 각 픽셀 차이 계산
-        for row in range(config.resize_height):
-            row_start_index = row * config.resize_width
-            for col in range(config.resize_width - 1):
-                left_pixel_index = row_start_index + col
-                difference.append(pixels[left_pixel_index] > pixels[left_pixel_index + 1])
+            pixels = list(img.getdata())
+            difference = []
+            # 각 픽셀 차이 계산
+            for row in range(config.resize_height):
+                row_start_index = row * config.resize_width
+                for col in range(config.resize_width - 1):
+                    left_pixel_index = row_start_index + col
+                    difference.append(pixels[left_pixel_index] > pixels[left_pixel_index + 1])
 
-        decimal_value = 0
-        hash_string = ""
-        # 16진수 dHash 생성
-        for index, value in enumerate(difference):
-            if value:
-                #decimal_value += value * (2 ** (index % 8))
-                decimal_value += (value << (index % 8))  # shift left 연산이 훨씬 빠름 (1초)
-            if index % 8 == 7:
-                # rjust로 16진수가 두자리가 아닌 한자리가 나오면 MSB쪽을 0으로 채움
-                hash_string += str(hex(decimal_value)[2:].rjust(2, "0"))
-                decimal_value = 0
-        hash_list.append(hash_string)
+            decimal_value = 0
+            hash_string = ""
+            # 16진수 dHash 생성
+            for index, value in enumerate(difference):
+                if value:
+                    #decimal_value += value * (2 ** (index % 8))
+                    decimal_value += (value << (index % 8))  # shift left 연산이 훨씬 빠름 (1초)
+                if index % 8 == 7:
+                    # rjust로 16진수가 두자리가 아닌 한자리가 나오면 MSB쪽을 0으로 채움
+                    hash_string += str(hex(decimal_value)[2:].rjust(2, "0"))
+                    decimal_value = 0
+            hash_list.append(hash_string)
 
 
 def get_Filtered_Images():
@@ -63,12 +66,13 @@ def get_Filtered_Images():
     count_search = 0
     count_cache = 0
     # 최종 건져낼 이미지들을 새로운 리스트에 삽입
-    for filename in os.listdir(config.DIRECTORY):
+    file_list = [filenames for (filenames) in os.listdir(config.DIRECTORY)]
+    file_list_jpg = [file for file in file_list if file.endswith(".jpg")]
+    for filename in file_list_jpg:
         # 캐시에 마스킹 되어있지만 중복 집단 중 1개씩의 이미지를 삽입
         if binary_Search(remain_list, img_num):
             count_search += 1
             remain_image_list.append(filename)
-
         # 캐시에 마스킹 되어 있지 않은 순수한 이미지 삽입
         elif not cache[img_num]:
             count_cache += 1
@@ -78,7 +82,7 @@ def get_Filtered_Images():
     return remain_image_list, count_search, count_cache
 
 
-def save_Result_To_Directory(remain_image_list, cache):
+def save_Result_At_Directory(remain_image_list, cache):
     # 필터링 된 이미지 저장 할 디렉토리 생성
     if not os.path.isdir(config.SAVE_DIRECTORY):
         os.mkdir(config.SAVE_DIRECTORY)
@@ -95,13 +99,31 @@ def save_Result_To_Directory(remain_image_list, cache):
     # 중복으로 판단되어 제외 된 이미지도 따로 저장
     image_num = 0
     for filename in os.listdir(config.DIRECTORY):
-        if cache[image_num]:
-            img = cv2.imread(os.path.join(config.DIRECTORY, filename), cv2.IMREAD_COLOR)
-            cv2.imwrite(os.path.join(config.EXCEPT_DIRECTORY, filename), img)
-        image_num += 1
+        if filename.endswith(".jpg"):
+            if cache[image_num]:
+                img = cv2.imread(os.path.join(config.DIRECTORY, filename), cv2.IMREAD_COLOR)
+                cv2.imwrite(os.path.join(config.EXCEPT_DIRECTORY, filename), img)
+            image_num += 1
+
+def check_image_size() :
+    count = 0
+    file_list = [filenames for (filenames) in os.listdir(config.DIRECTORY)]
+    file_list_jpg = [file for file in file_list if file.endswith(".jpg")]
+    for filename in file_list_jpg:
+            img_path = os.path.join(config.DIRECTORY, filename)
+            size = os.path.getsize(img_path)
+            if size <= 0 :
+                os.remove(img_path)
+                continue
+            count += 1
+    return count
 
 if __name__ == '__main__':
     config = config()
+    print("BEFORE config.NUM_IMAGES : " , config.NUM_IMAGES)
+    config.NUM_IMAGES = check_image_size()
+    print("AFTER config.NUM_IMAGES : " , config.NUM_IMAGES)
+
     cache = np.zeros(config.NUM_IMAGES, dtype=bool)  # 이미지 개수만큼 bool type의 캐시 메모리 생성
     hash_list = []
     start = time.time()  # 타이머 시작
@@ -112,12 +134,15 @@ if __name__ == '__main__':
     count_loop = 0
     remain_list = []
     # 전체 이미지 순회하며 비교 (time-dominant loop)
-    for org_idx in range(config.NUM_IMAGES - 1 - config.MAX_ITERATE):
+    print(get_Hamming_Distance(hash_list[0], hash_list[1]))
+    for org_idx in range(config.NUM_IMAGES - 1):
         if cache[org_idx]:
             continue
         else:
             for tgt_idx in range(org_idx, org_idx + config.MAX_ITERATE):
-                if org_idx == tgt_idx or cache[tgt_idx]:
+                if tgt_idx > config.NUM_IMAGES - 1:
+                    break
+                if org_idx == tgt_idx: #or cache[tgt_idx]:
                     continue
 
                 count_loop += 1
@@ -126,6 +151,7 @@ if __name__ == '__main__':
                     cache[org_idx] = True   # 비교한 이미지의 인덱스에 해당하는 캐시 메모리에 마스킹
                     remain_list.append(org_idx)    # 비교한 이미지는 살려야 하므로 따로 리스트에 저장
                     cache[tgt_idx] = True   # 비교된 이미지의 인덱스에 해당하는 캐시 메모리에 마스킹
+                #print(similarity)
 
     remain_image_list = []
     count_search = 0
@@ -134,15 +160,15 @@ if __name__ == '__main__':
 
     elapsed_time = time.time() - start
     efficiency = config.get_Efficiency(total_iter=count_loop)
-    cache_efficiency = config.get_Cache_Efficiency(total_iter=count_loop)
+    limited_efficiency = config.get_Limited_Compare_Efficiency(total_iter=count_loop)
 
     # spec summary
     print("주 소요구간 반복 횟수: {}".format(count_loop))
     print("소요 시간: {} sec".format(round(elapsed_time, 4)))
     print("중복 그룹 개수, 미중복 이미지 개수: {} {}".format(count_search, count_cache))
     print("필터링 후 남은 이미지 개수: {}".format(len(remain_image_list)))
-    print("(캐시사용)시간 효율: {}%".format(round(cache_efficiency, 4)))
-    print("(전체)시간 효율: {}%".format(round(efficiency, 4)))
+    print("(비교 데이터 수 제한)시간 효율: {}%".format(round(limited_efficiency, 4)))
+    print("(총)시간 효율: {}%".format(round(efficiency, 4)))
 
-    save_Result_To_Directory(remain_image_list, cache)
+    save_Result_At_Directory(remain_image_list, cache)
 
