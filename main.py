@@ -48,7 +48,8 @@ def get_DHash_Value(hash_list):
         # 16진수 dHash 생성
         for index, value in enumerate(difference):
             if value:
-                decimal_value += value * (2 ** (index % 8))
+                #decimal_value += value * (2 ** (index % 8))
+                decimal_value += (value << (index % 8))  # shift left 연산이 훨씬 빠름 (1초)
             if index % 8 == 7:
                 # rjust로 16진수가 두자리가 아닌 한자리가 나오면 MSB쪽을 0으로 채움
                 hash_string += str(hex(decimal_value)[2:].rjust(2, "0"))
@@ -104,12 +105,12 @@ if __name__ == '__main__':
     cache = np.zeros(config.NUM_IMAGES, dtype=bool)  # 이미지 개수만큼 bool type의 캐시 메모리 생성
     hash_list = []
     start = time.time()  # 타이머 시작
+    #cv2.ocl.setUseOpenCL(True)  # 속도 올려준다고 하는데 잘 모르겠음
     # 모든 이미지에 대하여 dhash 값 구하기
     get_DHash_Value(hash_list)
 
     count_loop = 0
     remain_list = []
-    cv2.ocl.setUseOpenCL(True) # 속도 올려준다고 하는데 잘 모르겠음
     # 전체 이미지 순회하며 비교 (time-dominant loop)
     for org_idx in range(config.NUM_IMAGES - 1 - config.MAX_ITERATE):
         if cache[org_idx]:
