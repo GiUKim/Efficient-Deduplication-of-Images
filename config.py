@@ -4,30 +4,31 @@ class config(object):
     NUM_IMAGES = 21743
 
     # 동일 이미지로 판단 할 해밍 거리 기준값 (해밍거리가 낮을수록 동일한 이미지일 가능성 높음)
-    # 각 데이터셋 마다 기준이 달라짐
-    # 자동차 데이터셋에서는 25 정도가 가장 좋은 듯
-    THRESHOLD = 24
+    # 각 데이터셋 마다 기준이 달라질 수 있음
+    THRESHOLD = 101  # person
 
     # dhash를 구하기 위해 원본 이미지를 리사이징할 때 리사이즈 크기
-    # 가로
-    resize_width = 9
-    # 세로
-    resize_height = 8
+    resize_width = 33 # 가로(dhash 연산때문에 2^n + 1로 하는걸 추천)
+    resize_height = 32 # 세로
 
     # 현재 이미지부터 몇 개의 이미지까지 비교할 것인지 (비교 데이터 수 제한)
-    MAX_ITERATE = 100
+    MAX_ITERATE = 300  # person
+
+    # 몇 회의 filtering 작업을 진행 할 것인지
+    PROCESSING = 3  # person
+    # 각 filtering stage 마다 threshold의 감소량
+    TH_REDUCE = 3  # person
 
     # 원본 데이터셋이 존재하는 폴더 경로
-    # DIRECTORY = 'C:\\Users\\AI\\PycharmProjects\\project1\\image'
     DIRECTORY = 'C:\\Users\\AI\\PycharmProjects\\project1\\person'
+    # DIRECTORY = 'C:\\Users\\AI\\PycharmProjects\\project1\\image'
 
     # 동일한 이미지를 제거한 새로운 데이터셋을 저장할 폴더 경로
-    # SAVE_DIRECTORY = 'C:\\Users\\AI\\PycharmProjects\\project1\\new_image'
-    SAVE_DIRECTORY = 'C:\\Users\\AI\\PycharmProjects\\project1\\person_new_image'
+    NEW_DIRECTORY = 'C:\\Users\\AI\\PycharmProjects\\project1\\new_person'
 
-    # 중복으로 판단되어 제거된 이미지들이 저장된 폴더 경로로
-    # EXCEPT_DIRECTORY = 'C:\\Users\\AI\\PycharmProjects\\project1\\dup_image'
-    EXCEPT_DIRECTORY = 'C:\\Users\\AI\\PycharmProjects\\project1\\person_dup_image'
+    # 중복이라고 판단되어 제거된 이미지들이 저장된 폴더 경로
+    EXCEPT_DIRECTORY = 'C:\\Users\\AI\\PycharmProjects\\project1\\dup_image_person'
+    #EXCEPT_DIRECTORY = 'C:\\Users\\AI\\PycharmProjects\\project1\\dup_image'
 
     # 아무것도 사용하지 않았을 때 예상 순환 횟수에 대해 효율성 계산
     def get_Efficiency(self, total_iter):
