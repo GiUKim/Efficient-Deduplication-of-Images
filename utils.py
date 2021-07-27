@@ -4,17 +4,6 @@ from tqdm import tqdm
 from config import Config
 config = Config()
 
-# 아무것도 사용하지 않았을 때 예상 순환 횟수에 대해 효율성 계산
-def get_Efficiency(total_iter):
-    # 기존 시간복잡도는 O(n^2)
-    original_iter = Config.NUM_IMAGES * Config.NUM_IMAGES
-    return ((original_iter - total_iter) / original_iter) * 100.0
-# 캐시메모리를 사용하여 중복연산을 제거했을 때 효율성 계산
-def get_Limited_Compare_Efficiency(total_iter):
-    # 기존 시간복잡도는 O(n^k) k는 비교할 주변 이미지의 최대 개수
-    original_iter = Config.NUM_IMAGES * Config.MAX_ITERATE
-    return ((original_iter - total_iter) / original_iter) * 100.0
-
 def get_Hamming_Distance(org_image, tgt_image):
     difference = (int(org_image, 16)) ^ (int(tgt_image, 16))
     return bin(difference).count("1")
@@ -168,10 +157,10 @@ def check_image_size() :
             count += 1
     return count
 
-def Summary(count_loop, elapsed_time):
+def Summary(count_loop, elapsed_time, img_total_num):
     # 각 효율성 계산
-    efficiency = get_Efficiency(total_iter=count_loop)
-    limited_efficiency = get_Limited_Compare_Efficiency(total_iter=count_loop)
+    efficiency = config.get_Efficiency(total_iter=count_loop, img_total_num=img_total_num)
+    limited_efficiency = config.get_Limited_Compare_Efficiency(total_iter=count_loop, img_total_num=img_total_num)
 
     # spec summary
     print("주 소요구간 반복 횟수: {}".format(count_loop))

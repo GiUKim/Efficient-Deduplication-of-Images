@@ -23,6 +23,6 @@ if __name__ == '__main__':
     elapsed_time = time.time() - start # 타이머 종료
 
     # 결과 요약
-    Summary(count_loop, elapsed_time)
+    Summary(count_loop, elapsed_time, config.NUM_IMAGES)
     # 이미지 저장
     save_Result_At_Directory(cache, remain_list, discard_recommend_list, cluster)

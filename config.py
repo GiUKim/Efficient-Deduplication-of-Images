@@ -36,3 +36,17 @@ class Config(object):
     # 중복이라고 판단되어 제거된 이미지들이 저장된 폴더 경로
     CLUSTER_DIRECTORY = 'C:\\Users\\AI\\PycharmProjects\\project1\\cluster_' + CATEGORY
 
+    # 아무것도 사용하지 않았을 때 예상 순환 횟수에 대해 효율성 계산
+    def get_Efficiency(total_iter, img_total_num):
+        # 기존 시간복잡도는 O(n^2)
+        original_iter = img_total_num * img_total_num
+        return ((original_iter - total_iter) / original_iter) * 100.0
+
+    # 캐시메모리를 사용하여 중복연산을 제거했을 때 효율성 계산
+    def get_Limited_Compare_Efficiency(total_iter, img_total_num):
+        # 기존 시간복잡도는 O(n^k) k는 비교할 주변 이미지의 최대 개수
+        original_iter = img_total_num * Config.MAX_ITERATE
+        return ((original_iter - total_iter) / original_iter) * 100.0
+
+
+
